@@ -1,7 +1,15 @@
 (ns clojure-vm.core)
 
+(defn comment? [command]
+  (re-find #"^//" command))
+
 (defn parse [parsed command]
-  (conj parsed command))
+  (cond
+    (comment? command)
+    parsed
+
+    :else
+    (conj parsed command)))
 
 (defn parse-commands
   ([commands]
