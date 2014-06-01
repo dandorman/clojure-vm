@@ -3,9 +3,12 @@
 (defn comment? [command]
   (re-find #"^//" command))
 
+(defn whitespace? [command]
+  (re-find #"^\s*$" command))
+
 (defn parse [parsed command]
   (cond
-    (comment? command)
+    (or (comment? command) (whitespace? command))
     parsed
 
     :else
