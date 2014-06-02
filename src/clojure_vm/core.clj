@@ -23,53 +23,47 @@
      (parse-commands (rest commands)
                      (parse parsed (first commands))))))
 
+(defn pop-stack []
+  ["@SP"
+   "A=M"
+   "A=A-1"
+   "D=A"
+   "@SP"
+   "M=D"])
+
+(defn pop-and-store [addr]
+  (concat (pop-stack) ["A=D"
+                       "D=M"
+                       (str "@" addr)
+                       "M=D"]))
+
+(defn push-data-onto-stack []
+  ["@SP"
+   "A=M"
+   "M=D"
+   "A=A+1"
+   "D=A"
+   "@SP"
+   "M=D"])
+
+(defn add [x y]
+  [(str "@" x)
+   "D=M"
+   (str "@" y)
+   "D=D+M"])
+
 (defn translate [[command & args]]
   (cond
     (= "push" command)
-    [(str "@" (last args))
-     "D=A"
-     "@SP"
-     "A=M"
-     "M=D"
-     "A=A+1"
-     "D=A"
-     "@SP"
-     "M=D"]
+    (concat [(str "@" (last args))
+             "D=A"]
+            (push-data-onto-stack))
 
     (= "add" command)
-    ["@SP"
-     "A=M"
-     "A=A-1"
-     "D=A"
-     "@SP"
-     "M=D"
-     "A=D"
-     "D=M"
-     "@R14"
-     "M=D"
-
-     "@SP"
-     "A=M"
-     "A=A-1"
-     "D=A"
-     "@SP"
-     "M=D"
-     "A=D"
-     "D=M"
-     "@R13"
-     "M=D"
-
-     "@R13"
-     "D=M"
-     "@R14"
-     "D=D+M"
-     "@SP"
-     "A=M"
-     "M=D"
-     "A=A+1"
-     "D=A"
-     "@SP"
-     "M=D"]
+    (concat (pop-and-store "R14")
+            (pop-and-store "R13")
+            (add "R13" "R14")
+            (push-data-onto-stack))
 
     :else
     [command]))
