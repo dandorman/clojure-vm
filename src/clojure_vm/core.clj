@@ -106,14 +106,128 @@
 (defmulti handle-push (fn [segment _] segment))
 (defmethod handle-push "constant" [_ index]
   (concat [(str "@" index)
-            "D=A"]
+           "D=A"]
           (push-data-onto-stack)))
+(defmethod handle-push "local" [_ index]
+  (concat [(str "@" index)
+           "D=A"
+           "@LCL"
+           "A=M"
+           "A=D+A"
+           "D=M"]
+          (push-data-onto-stack)))
+(defmethod handle-push "argument" [_ index]
+  (concat [(str "@" index)
+           "D=A"
+           "@ARG"
+           "A=M"
+           "A=D+A"
+           "D=M"]
+          (push-data-onto-stack)))
+(defmethod handle-push "this" [_ index]
+  (concat [(str "@" index)
+           "D=A"
+           "@THIS"
+           "A=M"
+           "A=D+A"
+           "D=M"]
+          (push-data-onto-stack)))
+(defmethod handle-push "that" [_ index]
+  (concat [(str "@" index)
+           "D=A"
+           "@THAT"
+           "A=M"
+           "A=D+A"
+           "D=M"]
+          (push-data-onto-stack)))
+(defmethod handle-push "temp" [_ index]
+  (concat [(str "@" index)
+           "D=A"
+           "@R5"
+           "A=D+A"
+           "D=M"]
+          (push-data-onto-stack)))
+
+(defmulti handle-pop (fn [segment _] segment))
+(defmethod handle-pop "local" [_ index]
+  (concat (pop-and-store "R13")
+          [(str "@" index)
+           "D=A"
+           "@LCL"
+           "A=M"
+           "D=D+A"
+           "@R14"
+           "M=D"
+           "@R13"
+           "D=M"
+           "@R14"
+           "A=M"
+           "M=D"]))
+(defmethod handle-pop "argument" [_ index]
+  (concat (pop-and-store "R13")
+          [(str "@" index)
+           "D=A"
+           "@ARG"
+           "A=M"
+           "D=D+A"
+           "@R14"
+           "M=D"
+           "@R13"
+           "D=M"
+           "@R14"
+           "A=M"
+           "M=D"]))
+(defmethod handle-pop "this" [_ index]
+  (concat (pop-and-store "R13")
+          [(str "@" index)
+           "D=A"
+           "@THIS"
+           "A=M"
+           "D=D+A"
+           "@R14"
+           "M=D"
+           "@R13"
+           "D=M"
+           "@R14"
+           "A=M"
+           "M=D"]))
+(defmethod handle-pop "that" [_ index]
+  (concat (pop-and-store "R13")
+          [(str "@" index)
+           "D=A"
+           "@THAT"
+           "A=M"
+           "D=D+A"
+           "@R14"
+           "M=D"
+           "@R13"
+           "D=M"
+           "@R14"
+           "A=M"
+           "M=D"]))
+(defmethod handle-pop "temp" [_ index]
+  (concat (pop-and-store "R13")
+          [(str "@" index)
+           "D=A"
+           "@R5"
+           "D=D+A"
+           "@R14"
+           "M=D"
+           "@R13"
+           "D=M"
+           "@R14"
+           "A=M"
+           "M=D"]))
 
 (defn translate [[[command & args] i]]
   (cond
     (= "push" command)
     (let [[segment index] args]
       (handle-push segment index))
+
+    (= "pop" command)
+    (let [[segment index] args]
+      (handle-pop segment index))
 
     (= "add" command)
     (concat (pop-and-store "R14")
