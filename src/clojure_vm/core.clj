@@ -122,6 +122,18 @@
             "D=A"]
             (push-data-onto-stack))
 
+    (= "pointer" segment)
+    (cond
+      (= "0" index)
+      (concat ["@THIS"
+               "D=M"]
+              (push-data-onto-stack))
+
+      (= "1" index)
+      (concat ["@THAT"
+               "D=M"]
+              (push-data-onto-stack)))
+
     (some (set (keys segments)) [segment])
     (concat [(str "@" index)
              "D=A"]
@@ -132,6 +144,14 @@
 
 (defn handle-pop [segment index]
   (cond
+    (= "pointer" segment)
+    (cond
+      (= "0" index)
+      (pop-and-store "THIS")
+
+      (= "1" index)
+      (pop-and-store "THAT"))
+
     (some (set (keys segments)) [segment])
     (concat (pop-and-store "R13")
             [(str "@" index)
