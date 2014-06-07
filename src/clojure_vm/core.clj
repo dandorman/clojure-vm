@@ -109,6 +109,9 @@
                "that"     "THAT"
                "temp"     "R5"})
 
+(def pointers {"0" "THIS"
+               "1" "THAT"})
+
 (defn reference-segment [segment]
   (if (= "temp" segment)
     [(str "@" (get segments segment))]
@@ -123,14 +126,8 @@
             (push-data-onto-stack))
 
     (= "pointer" segment)
-    (cond
-      (= "0" index)
-      (concat ["@THIS"
-               "D=M"]
-              (push-data-onto-stack))
-
-      (= "1" index)
-      (concat ["@THAT"
+    (let [pointer (get pointers index)]
+      (concat [(str "@" pointer)
                "D=M"]
               (push-data-onto-stack)))
 
@@ -145,12 +142,7 @@
 (defn handle-pop [segment index]
   (cond
     (= "pointer" segment)
-    (cond
-      (= "0" index)
-      (pop-and-store "THIS")
-
-      (= "1" index)
-      (pop-and-store "THAT"))
+    (pop-and-store (get pointers index))
 
     (some (set (keys segments)) [segment])
     (concat (pop-and-store "R13")
