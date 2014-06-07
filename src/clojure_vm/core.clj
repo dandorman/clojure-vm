@@ -103,12 +103,16 @@
    "D=M"
    "D=!D"])
 
+(defn handle-push [segment index]
+  (concat [(str "@" index)
+            "D=A"]
+          (push-data-onto-stack)))
+
 (defn translate [[[command & args] i]]
   (cond
     (= "push" command)
-    (concat [(str "@" (last args))
-             "D=A"]
-            (push-data-onto-stack))
+    (let [[segment index] args]
+      (handle-push segment index))
 
     (= "add" command)
     (concat (pop-and-store "R14")
