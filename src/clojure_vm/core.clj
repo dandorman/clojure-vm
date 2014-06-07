@@ -103,7 +103,8 @@
    "D=M"
    "D=!D"])
 
-(defn handle-push [segment index]
+(defmulti handle-push (fn [segment _] segment))
+(defmethod handle-push "constant" [_ index]
   (concat [(str "@" index)
             "D=A"]
           (push-data-onto-stack)))
