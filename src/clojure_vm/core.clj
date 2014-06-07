@@ -63,47 +63,28 @@
    "D=M"
    "D=-D"])
 
-(defn eq [x y i]
+(defn _compare [op x y i]
   [(str "@" x)
    "D=M"
    (str "@" y)
    "D=D-M"
-   (str "@EQ_" i)
-   "D;JEQ"
+   (str "@" op "_" i)
+   (str "D;J" op)
    "D=0"
-   (str "@EQ_" i "_END")
+   (str "@" op "_" i "_END")
    "0;JMP"
-   (str "(EQ_" i ")")
+   (str "(" op "_" i ")")
    "D=-1"
-   (str "(EQ_" i "_END)")])
+   (str "(" op "_" i "_END)")])
+
+(defn eq [x y i]
+  (_compare "EQ" x y i))
 
 (defn gt [x y i]
-  [(str "@" x)
-   "D=M"
-   (str "@" y)
-   "D=D-M"
-   (str "@GT_" i)
-   "D;JGT"
-   "D=0"
-   (str "@GT_" i "_END")
-   "0;JMP"
-   (str "(GT_" i ")")
-   "D=-1"
-   (str "(GT_" i "_END)")])
+  (_compare "GT" x y i))
 
 (defn lt [x y i]
-  [(str "@" x)
-   "D=M"
-   (str "@" y)
-   "D=D-M"
-   (str "@LT_" i)
-   "D;JLT"
-   "D=0"
-   (str "@LT_" i "_END")
-   "0;JMP"
-   (str "(LT_" i ")")
-   "D=-1"
-   (str "(LT_" i "_END)")])
+  (_compare "LT" x y i))
 
 (defn _and [x y]
   [(str "@" x)
