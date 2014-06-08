@@ -131,6 +131,11 @@
                "D=M"]
               (push-data-onto-stack)))
 
+    (= "static" segment)
+    (concat [(str "@Foo." index)
+             "D=M"]
+            (push-data-onto-stack))
+
     (some (set (keys segments)) [segment])
     (concat [(str "@" index)
              "D=A"]
@@ -143,6 +148,9 @@
   (cond
     (= "pointer" segment)
     (pop-and-store (get pointers index))
+
+    (= "static" segment)
+    (pop-and-store (str "Foo." index))
 
     (some (set (keys segments)) [segment])
     (concat (pop-and-store "R13")
