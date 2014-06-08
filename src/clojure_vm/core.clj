@@ -1,4 +1,6 @@
-(ns clojure-vm.core)
+(ns clojure-vm.core
+  (:require [clojure.java.io :as io])
+  (:gen-class))
 
 (defn comment? [command]
   (re-find #"^//" command))
@@ -118,7 +120,7 @@
     [(str "@" (get segments segment))
      "A=M"]))
 
-(defn handle-push [segment index]
+(defn handle-push [segment index file]
   (cond
     (= "constant" segment)
     (concat [(str "@" index)
@@ -132,7 +134,7 @@
               (push-data-onto-stack)))
 
     (= "static" segment)
-    (concat [(str "@Foo." index)
+    (concat [(str "@" file "." index)
              "D=M"]
             (push-data-onto-stack))
 
@@ -144,13 +146,13 @@
              "D=M"]
             (push-data-onto-stack))))
 
-(defn handle-pop [segment index]
+(defn handle-pop [segment index file]
   (cond
     (= "pointer" segment)
     (pop-and-store (get pointers index))
 
     (= "static" segment)
-    (pop-and-store (str "Foo." index))
+    (pop-and-store (str file "." index))
 
     (some (set (keys segments)) [segment])
     (concat (pop-and-store "R13")
@@ -166,15 +168,15 @@
              "A=M"
              "M=D"])))
 
-(defn translate [[[command & args] i]]
+(defn translate [[[command & args] i] file]
   (cond
     (= "push" command)
     (let [[segment index] args]
-      (handle-push segment index))
+      (handle-push segment index file))
 
     (= "pop" command)
     (let [[segment index] args]
-      (handle-pop segment index))
+      (handle-pop segment index file))
 
     (= "add" command)
     (concat (pop-and-store "R14")
@@ -231,10 +233,13 @@
     :else
     [command]))
 
-(defn -main []
-  (let [vm-commands (line-seq (java.io.BufferedReader. *in*))
-        parsed (parse-commands vm-commands)]
-    (doseq [command parsed]
-      (let [asm-lines (translate command)]
-        (doseq [asm asm-lines]
-          (println asm))))))
+(defn -main [_]
+  (doseq [filename *command-line-args*]
+    (with-open [rdr (io/reader filename)]
+      (let [vm-commands (line-seq rdr)
+            parsed (parse-commands vm-commands)]
+        (doseq [command parsed]
+          (let [basename (re-find #"^(?:[^.]+)" (.getName (io/file filename)))
+                asm-lines (translate command basename)]
+            (doseq [asm asm-lines]
+              (println asm))))))))
