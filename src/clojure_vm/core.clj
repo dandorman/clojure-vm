@@ -362,14 +362,16 @@
               (if-goto identifier)))
 
     (= "function" command)
-    (let [[identifier num-locals] args]
-      (concat [(str "// function " identifier " " num-locals)]
-              (function identifier num-locals)))
+    (let [[identifier num-locals] args
+          function-name (str file "$" identifier)]
+      (concat [(str "// function " function-name " " num-locals)]
+              (function function-name num-locals)))
 
     (= "call" command)
-    (let [[identifier num-args] args]
-      (concat [(str "// call " identifier " " num-args)]
-              (call identifier num-args i)))
+    (let [[identifier num-args] args
+          function-name (str file "$" identifier)]
+      (concat [(str "// call " function-name " " num-args)]
+              (call function-name num-args i)))
 
     (= "return" command)
     (concat ["// return"]
