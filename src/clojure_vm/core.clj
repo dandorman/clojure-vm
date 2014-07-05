@@ -203,11 +203,12 @@
 
 (defn call [identifier num-args i]
   (concat [(str "@" identifier ".RETURN_" i)]     ; push return address
+          ["D=A"]
           (push-data-onto-stack)
           (reference-segment "local")             ; push LCL
           ["D=A"]
           (push-data-onto-stack)
-          (reference-segment "arg")               ; push ARG
+          (reference-segment "argument")          ; push ARG
           ["D=A"]
           (push-data-onto-stack)
           (reference-segment "this")              ; push THIS
@@ -217,7 +218,7 @@
           ["D=A"]
           (push-data-onto-stack)
           ["@SP"                                  ; reposition ARG
-           "D=A"
+           "D=M"
            "@R13"
            "M=D"
            (str "@" (+ num-args 5))
@@ -240,10 +241,14 @@
            (str "@" identifier ".REPOSITION_ARG_" i "_BEGIN")
            "0;JMP"
            (str "(" identifier ".REPOSITION_ARG_" i "_END)")
+           "@R13"
+           "D=M"
+           "@ARG"
+           "M=D"
            "@SP"                                    ; reposition LCL
-           "D=A"]
-          (reference-segment "local")
-          ["M=D"]
+           "D=M"
+           "@LCL"
+           "M=D"]
           (goto identifier)                         ; transfer control
           [(str "(" identifier ".RETURN_" i ")")])) ; return address
 
@@ -362,16 +367,18 @@
               (if-goto identifier)))
 
     (= "function" command)
-    (let [[identifier num-locals] args
+    (let [[identifier num-locals-str] args
+          num-locals (Integer/parseInt num-locals-str)
           function-name (str file "$" identifier)]
       (concat [(str "// function " function-name " " num-locals)]
-              (function function-name num-locals)))
+              (function identifier num-locals)))
 
     (= "call" command)
-    (let [[identifier num-args] args
+    (let [[identifier num-args-str] args
+          num-args (Integer/parseInt num-args-str)
           function-name (str file "$" identifier)]
       (concat [(str "// call " function-name " " num-args)]
-              (call function-name num-args i)))
+              (call identifier num-args i)))
 
     (= "return" command)
     (concat ["// return"]
@@ -380,7 +387,13 @@
     :else
     [command]))
 
-(defn -main [_]
+(defn -main [& args]
+  (println "@256")
+  (println "D=A")
+  (println "@SP")
+  (println "M=D")
+  (doseq [line (translate [["call" "Sys.init" "0"] -1] "")]
+    (println line))
   (doseq [filename *command-line-args*]
     (with-open [rdr (io/reader filename)]
       (let [vm-commands (line-seq rdr)
