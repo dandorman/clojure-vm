@@ -117,6 +117,7 @@
           [(str "@" identifier)
            "D;JNE"]))
 
+
 (def segments {"local"    "LCL"
                "argument" "ARG"
                "this"     "THIS"
@@ -179,6 +180,97 @@
              "@R14"
              "A=M"
              "M=D"])))
+
+(defn function [identifier num-locals]
+  (concat [(str "(" identifier ")")
+           (str "@" num-locals)
+           "D=A"
+           "@R13"
+           "M=D"
+           (str "(" identifier ".INIT_VARS_BEGIN)")
+           "@R13"
+           "D=M"
+           (str "@" identifier ".INIT_VARS_END")
+           "D;JLE"
+           "D=D-1"
+           "@R13"
+           "M=D"
+           "D=0"]
+          (push-data-onto-stack)
+          [(str "@" identifier ".INIT_VARS_BEGIN")
+           "0;JMP"
+           (str "(" identifier ".INIT_VARS_END)")]))
+
+(defn call [identifier num-args i]
+  (concat [(str "@" identifier ".RETURN_" i)]     ; push return address
+          (push-data-onto-stack)
+          (reference-segment "local")             ; push LCL
+          ["D=A"]
+          (push-data-onto-stack)
+          (reference-segment "arg")               ; push ARG
+          ["D=A"]
+          (push-data-onto-stack)
+          (reference-segment "this")              ; push THIS
+          ["D=A"]
+          (push-data-onto-stack)
+          (reference-segment "that")              ; push THAT
+          ["D=A"]
+          (push-data-onto-stack)
+          ["@SP"                                   ; reposition ARG
+           "D=A"
+           "@R13"
+           "M=D"
+           (str "@" (+ num-args 5))
+           "D=A"
+           "@R14"
+           "M=D"
+           (str "(" identifier ".REPOSITION_ARG_" i "_BEGIN)")
+           "@R14"
+           "D=M"
+           (str "@" identifier ".REPOSITION_ARG_" i "_END")
+           "D;JLE"
+           "D=D-1"
+           "@R14"
+           "M=D"
+           "@R13"
+           "D=M"
+           "D=D-1"
+           "@R13"
+           "M=D"
+           (str "@" identifier ".REPOSITION_ARG_" i "_BEGIN")
+           "0;JMP"
+           (str "(" identifier ".REPOSITION_ARG_" i "_END)")
+           "@SP"                                   ; reposition LCL
+           "D=A"]
+          (reference-segment "local")
+          ["M=D"]
+          (goto identifier)                       ; transfer control
+          [(str "(" identifier ".RETURN_" i ")")])) ; return address
+
+(defn return []
+  (concat (pop-and-store "R13") ; store return value
+          ["@ARG" ; store argument address
+           "D=M"
+           "@R14"
+           "M=D"
+           "@LCL" ; reset stack pointer to caller info
+           "D=M"
+           "@SP"
+           "M=D"]
+          (pop-and-store "THAT") ; restore caller state
+          (pop-and-store "THIS")
+          (pop-and-store "ARG")
+          (pop-and-store "LCL")
+          (pop-and-store "R15") ; store return address
+          ["@R14" ; reset stack pointer
+           "D=M"
+           "@SP"
+           "M=D"
+           "@R13"
+           "D=M"]
+          (push-data-onto-stack)
+          ["@R15" ; restore control to caller
+           "0;JMP"]))
 
 (defn translate [[[command & args] i] file]
   (cond
@@ -267,6 +359,20 @@
     (let [identifier (first args)]
       (concat [(str "// if-goto " identifier)]
               (if-goto identifier)))
+
+    (= "function" command)
+    (let [[identifier num-locals] args]
+      (concat [(str "// function " identifier " " num-locals)]
+              (function identifier num-locals)))
+
+    (= "call" command)
+    (let [[identifier num-args] args]
+      (concat [(str "// call " identifier " " num-args)]
+              (call identifier num-args i)))
+
+    (= "return" command)
+    (concat ["// return"]
+            (return))
 
     :else
     [command]))
