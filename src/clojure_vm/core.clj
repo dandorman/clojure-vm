@@ -216,7 +216,7 @@
           (reference-segment "that")              ; push THAT
           ["D=A"]
           (push-data-onto-stack)
-          ["@SP"                                   ; reposition ARG
+          ["@SP"                                  ; reposition ARG
            "D=A"
            "@R13"
            "M=D"
@@ -240,11 +240,11 @@
            (str "@" identifier ".REPOSITION_ARG_" i "_BEGIN")
            "0;JMP"
            (str "(" identifier ".REPOSITION_ARG_" i "_END)")
-           "@SP"                                   ; reposition LCL
+           "@SP"                                    ; reposition LCL
            "D=A"]
           (reference-segment "local")
           ["M=D"]
-          (goto identifier)                       ; transfer control
+          (goto identifier)                         ; transfer control
           [(str "(" identifier ".RETURN_" i ")")])) ; return address
 
 (defn return []
@@ -266,10 +266,11 @@
            "D=M"
            "@SP"
            "M=D"
-           "@R13"
+           "@R13" ; push return value onto stack
            "D=M"]
           (push-data-onto-stack)
           ["@R15" ; restore control to caller
+           "A=M"
            "0;JMP"]))
 
 (defn translate [[[command & args] i] file]
