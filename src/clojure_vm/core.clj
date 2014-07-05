@@ -105,6 +105,18 @@
    "D=M"
    "D=!D"])
 
+(defn label [identifier]
+  [(str "(" identifier ")")])
+
+(defn goto [identifier]
+  [(str "@" identifier)
+   "0;JMP"])
+
+(defn if-goto [identifier]
+  (concat (pop-stack)
+          [(str "@" identifier)
+           "D;JNE"]))
+
 (def segments {"local"    "LCL"
                "argument" "ARG"
                "this"     "THIS"
@@ -172,63 +184,89 @@
   (cond
     (= "push" command)
     (let [[segment index] args]
-      (handle-push segment index file))
+      (concat [(str "// push " segment " " index)]
+              (handle-push segment index file)))
 
     (= "pop" command)
     (let [[segment index] args]
-      (handle-pop segment index file))
+      (concat [(str "// pop " segment " " index)]
+              (handle-pop segment index file)))
 
     (= "add" command)
-    (concat (pop-and-store "R14")
+    (concat ["// add"]
+            (pop-and-store "R14")
             (pop-and-store "R13")
             (add "R13" "R14")
             (push-data-onto-stack))
 
     (= "sub" command)
-    (concat (pop-and-store "R14")
+    (concat ["// sub"]
+            (pop-and-store "R14")
             (pop-and-store "R13")
             (sub "R13" "R14")
             (push-data-onto-stack))
 
     (= "neg" command)
-    (concat (pop-and-store "R13")
+    (concat ["// neg"]
+            (pop-and-store "R13")
             (neg "R13")
             (push-data-onto-stack))
 
     (= "eq" command)
-    (concat (pop-and-store "R14")
+    (concat ["// eq"]
+            (pop-and-store "R14")
             (pop-and-store "R13")
             (eq "R13" "R14" i)
             (push-data-onto-stack))
 
     (= "gt" command)
-    (concat (pop-and-store "R14")
+    (concat ["// gt"]
+            (pop-and-store "R14")
             (pop-and-store "R13")
             (gt "R13" "R14" i)
             (push-data-onto-stack))
 
     (= "lt" command)
-    (concat (pop-and-store "R14")
+    (concat ["// lt"]
+            (pop-and-store "R14")
             (pop-and-store "R13")
             (lt "R13" "R14" i)
             (push-data-onto-stack))
 
     (= "and" command)
-    (concat (pop-and-store "R14")
+    (concat ["// and"]
+            (pop-and-store "R14")
             (pop-and-store "R13")
             (_and "R13" "R14")
             (push-data-onto-stack))
 
     (= "or" command)
-    (concat (pop-and-store "R14")
+    (concat ["// or"]
+            (pop-and-store "R14")
             (pop-and-store "R13")
             (_or "R13" "R14")
             (push-data-onto-stack))
 
     (= "not" command)
-    (concat (pop-and-store "R13")
+    (concat ["// not"]
+            (pop-and-store "R13")
             (_not "R13")
             (push-data-onto-stack))
+
+    (= "label" command)
+    (let [identifier (first args)]
+      (concat [(str "// label " identifier)]
+              (label identifier)))
+
+    (= "goto" command)
+    (let [identifier (first args)]
+      (concat [(str "// goto " identifier)]
+              (goto identifier)))
+
+    (= "if-goto" command)
+    (let [identifier (first args)]
+      (concat [(str "// if-goto " identifier)]
+              (if-goto identifier)))
 
     :else
     [command]))
