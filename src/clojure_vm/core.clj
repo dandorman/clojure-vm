@@ -387,13 +387,19 @@
     :else
     [command]))
 
+(def bootstrap-asm (concat ["@256"
+                            "D=A"
+                            "@SP"
+                            "M=D"]
+                           (call "Sys.init" 0 "bootstrap")))
+
+(defn bootstrap []
+  (doseq [asm bootstrap-asm]
+    (println asm)))
+
 (defn -main [& args]
-  (println "@256")
-  (println "D=A")
-  (println "@SP")
-  (println "M=D")
-  (doseq [line (translate [["call" "Sys.init" "0"] -1] "")]
-    (println line))
+  (if (> (count *command-line-args*) 1)
+    (bootstrap))
   (doseq [filename *command-line-args*]
     (with-open [rdr (io/reader filename)]
       (let [vm-commands (line-seq rdr)
